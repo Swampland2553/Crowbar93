@@ -1,44 +1,20 @@
 ---
 name: "pdf"
-description: "Use when tasks involve reading, creating, or reviewing PDF files where rendering and layout matter; prefer visual checks by rendering pages with Poppler and use Python tools such as reportlab, pdfplumber, and pypdf for generation and extraction."
+description: "Use when tasks involve reading, creating, or reviewing PDF files where rendering and layout matter; verify PDF tooling before use, prefer visual checks by rendering pages with Poppler, and use Python tools such as reportlab, pdfplumber, and pypdf for generation and extraction."
 source: "https://github.com/openai/skills/blob/main/skills/.curated/pdf/SKILL.md"
-adapted_for: "/root/gg4 on 2026-06-17"
+adapted_for: "portable Linux use"
 ---
 
 # PDF Skill
 
-## Local machine status
+## Expected dependencies
 
-This file is adapted for this machine.
+Expected tools and libraries:
+- `pdftoppm` from Poppler for rendering PDF pages to PNG.
+- `python3` for PDF scripts and verification.
+- Python packages: `reportlab`, `pdfplumber`, `pypdf`.
 
-Available here:
-- `pdftoppm`: `/usr/bin/pdftoppm` (Poppler 25.07.0)
-- `uv`: `/usr/bin/uv` (0.11.15)
-- `python3`: `/usr/bin/python3` (3.14.5)
-- `pip`: `/usr/bin/pip` (25.1.1)
-- `npx`: `/usr/bin/npx` (10.9.7)
-
-Python packages installed in system Python:
-- `reportlab` 4.5.1
-- `pdfplumber` 0.11.10
-- `pypdf` 6.13.3
-
-Not available here:
-- Global `skills` CLI
-- `brew`
-- `apt-get`
-
-## Skill installation
-
-The global `skills` command is not installed on this machine.
-
-Use `npx` if installing this skill into a skills-aware environment:
-
-```bash
-npx skills add https://github.com/openai/skills --skill pdf
-```
-
-Global `skills` CLI is not required for using the PDF tooling already installed here.
+Do not assume these dependencies are installed. Verify them on the current machine before use.
 
 ## When to use
 
@@ -48,70 +24,45 @@ Global `skills` CLI is not required for using the PDF tooling already installed 
 
 ## Workflow
 
-1. Prefer visual review: render PDF pages to PNGs and inspect them.
-   - Use `pdftoppm`; it is already available on this machine.
-2. Use `reportlab` to generate PDFs when creating new documents.
-3. Use `pdfplumber` or `pypdf` for text extraction and quick checks.
+1. Verify expected dependencies before first use in a new environment.
+2. Prefer visual review: render PDF pages to PNGs and inspect them.
+   - Use `pdftoppm` if available.
+   - If unavailable, ask the user before installing system packages with `sudo`.
+3. Use `reportlab` to generate PDFs when creating new documents.
+4. Use `pdfplumber` or `pypdf` for text extraction and quick checks.
    - Do not rely on text extraction for layout fidelity.
-4. After each meaningful update, re-render pages and verify alignment, spacing, and legibility.
+5. After each meaningful update, re-render pages and verify alignment, spacing, and legibility.
 
 ## Temp and output conventions
 
 - Use `tmp/pdfs/` for intermediate files; delete when done.
-- Write final artifacts under `output/pdf/` when working in this repo.
+- Write final artifacts under `output/pdf/` when working in a repo.
 - Keep filenames stable and descriptive.
 
-## Dependencies
+## Verify dependencies
 
-Dependencies are already installed on this machine.
-
-If they need repair or reinstall, use system Python with `uv`:
+Check tools:
 
 ```bash
-uv pip install --system reportlab pdfplumber pypdf
+command -v pdftoppm
+command -v python3
 ```
 
-Fallback if `uv` becomes unavailable:
-
-```bash
-python3 -m pip install reportlab pdfplumber pypdf
-```
-
-Do not use these source-file commands on this machine:
-
-```bash
-brew install poppler
-sudo apt-get install -y poppler-utils
-```
-
-Reason: `brew` and `apt-get` are not available here. Poppler rendering is already available through `pdftoppm`.
-
-## Environment
-
-No required environment variables.
-
-## Rendering command
-
-```bash
-pdftoppm -png "$INPUT_PDF" "$OUTPUT_PREFIX"
-```
-
-Example:
-
-```bash
-mkdir -p tmp/pdfs/rendered
-pdftoppm -png input.pdf tmp/pdfs/rendered/page
-```
-
-## Quick verification
-
-Check installed Python packages:
+Check Python packages and versions:
 
 ```bash
 python3 - <<'PY'
 import importlib.metadata as m
+
+missing = []
 for name in ["reportlab", "pdfplumber", "pypdf"]:
-    print(name, m.version(name))
+    try:
+        print(f"{name} {m.version(name)}")
+    except m.PackageNotFoundError:
+        missing.append(name)
+
+if missing:
+    raise SystemExit("missing: " + ", ".join(missing))
 PY
 ```
 
@@ -128,6 +79,59 @@ Check renderer:
 
 ```bash
 pdftoppm -v
+```
+
+## Install missing dependencies
+
+Ask the user before installing system-level packages or using `sudo`.
+
+Python packages, preferred when `uv` is available and system Python install is intended:
+
+```bash
+uv pip install --system reportlab pdfplumber pypdf
+```
+
+Python package fallback:
+
+```bash
+python3 -m pip install reportlab pdfplumber pypdf
+```
+
+Fedora Poppler tools, only after user approval:
+
+```bash
+sudo dnf install -y poppler-utils
+```
+
+Ubuntu/Debian Poppler tools, only after user approval:
+
+```bash
+sudo apt-get install -y poppler-utils
+```
+
+macOS Poppler tools:
+
+```bash
+brew install poppler
+```
+
+If installation is not possible in the environment, tell the user exactly which dependency is missing and how to install it locally.
+
+## Environment
+
+No required environment variables.
+
+## Rendering command
+
+```bash
+pdftoppm -png "$INPUT_PDF" "$OUTPUT_PREFIX"
+```
+
+Example:
+
+```bash
+mkdir -p tmp/pdfs/rendered
+pdftoppm -png input.pdf tmp/pdfs/rendered/page
 ```
 
 ## Quality expectations
